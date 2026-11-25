@@ -36,6 +36,17 @@ public class LocomotionSystem : MonoBehaviour
     [SerializeField, Range(0.01f, 1f), Tooltip("Min height difference above which to start rotating the body.")]
     private float realignmentThreshold = 0.1f;
 
+    [Space]
+    [SerializeField, Tooltip("Bilateral pairs limbs left/right (spiders, centipedes). Radial excludes adjacent (i±1)%N neighbors and caps simultaneous moving limbs (5-legged creatures).")]
+    public GaitMode gaitMode = GaitMode.Bilateral;
+
+    [SerializeField, Min(1), Tooltip("Maximum simultaneous swinging limbs when walking in Radial mode.")]
+    private int maxMovingLimbsWalk = 1;
+
+    [SerializeField, Min(1), Tooltip("Maximum simultaneous swinging limbs when sprinting in Radial mode.")]
+    private int maxMovingLimbsSprint = 2;
+
+    [Space]
     [SerializeField, Tooltip("Randomizes the starting locomotion pattern of the limb targets.")]
     private bool randomizeStartingPattern = true;
 
@@ -62,6 +73,7 @@ public class LocomotionSystem : MonoBehaviour
     public bool IsRotating { get; private set; }
     public Vector3 CenterOfMass { get; private set; }
     public enum ColliderGeneration { DontGenerate, CompleteBody, EachLimb }
+    public enum GaitMode { Bilateral, Radial }
 
 
     void Awake()
@@ -109,6 +121,11 @@ public class LocomotionSystem : MonoBehaviour
     {
         if (randomizeStartingPattern)
         {
+            if (gaitMode == GaitMode.Radial)
+            {
+                return;
+            }
+
             int disparity = 0;
             for (int i = 0; i < limbs.Count; i++)
             {
@@ -116,6 +133,32 @@ public class LocomotionSystem : MonoBehaviour
                 if (i % 2 == 0) disparity++;
             }
         }
+    }
+
+    /// <summary>
+    /// Checks whether limb <paramref name="limbId"/> may lift in Radial gait mode:
+    /// forbids adjacent neighbors (i±1)%N from moving together and caps total simultaneous swings.
+    /// </summary>
+    public bool CanRadialLimbMove(int limbId, bool isSprinting)
+    {
+        int count = limbs.Count;
+        if (count == 0) return false;
+
+        int prev = (limbId - 1 + count) % count;
+        int next = (limbId + 1) % count;
+        if (limbs[prev].IsMoving || limbs[next].IsMoving)
+        {
+            return false;
+        }
+
+        int movingCount = 0;
+        for (int i = 0; i < count; i++)
+        {
+            if (limbs[i].IsMoving) movingCount++;
+        }
+
+        int cap = isSprinting ? maxMovingLimbsSprint : maxMovingLimbsWalk;
+        return movingCount < cap;
     }
 
     /// <summary>
@@ -655,23 +698,26 @@ public class LocomotionSystem : MonoBehaviour
             // Align the tip and its target
             tipTarget.transform.position = tip.transform.position;
 
-            // Set the CC data
-            int oppositeIndex = i % 2 == 0 ? i + 1 : i - 1; // Opposites will always be (0, 1) (2, 3), ...
-            if (oppositeIndex < limbObjects.Count)
+            if (gaitMode == GaitMode.Bilateral)
             {
-                CC.opposite = limbObjects[oppositeIndex].transform;
-            }
+                // Set the CC data
+                int oppositeIndex = i % 2 == 0 ? i + 1 : i - 1; // Opposites will always be (0, 1) (2, 3), ...
+                if (oppositeIndex < limbObjects.Count)
+                {
+                    CC.opposite = limbObjects[oppositeIndex].transform;
+                }
 
-            int aheadIndex = i + 2;
-            if (aheadIndex < limbObjects.Count)
-            {
-                CC.ahead = limbObjects[aheadIndex].transform;
-            }
+                int aheadIndex = i + 2;
+                if (aheadIndex < limbObjects.Count)
+                {
+                    CC.ahead = limbObjects[aheadIndex].transform;
+                }
 
-            int behindIndex = i - 2;
-            if (behindIndex >= 0)
-            {
-                CC.behind = limbObjects[behindIndex].transform;
+                int behindIndex = i - 2;
+                if (behindIndex >= 0)
+                {
+                    CC.behind = limbObjects[behindIndex].transform;
+                }
             }
 
             CC.target = tipTarget.transform;
@@ -680,6 +726,39 @@ public class LocomotionSystem : MonoBehaviour
             // Add the CC to the list of limbs
             limbs.Add(CC);
         }
+    }
+
+    /// <summary>
+    /// Auto-detects a radial 5-leg rig (Body + Leg_0_Hip..Leg_4_Hip), switches to Radial mode, and runs SetupModel.
+    /// </summary>
+    public void AutoSetupRadialModel()
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+        foreach (Transform t in children)
+        {
+            if (t.name == "Body")
+            {
+                body = t.gameObject;
+                break;
+            }
+        }
+
+        limbObjects = new List<GameObject>();
+        for (int i = 0; i < 5; i++)
+        {
+            string hipName = $"Leg_{i}_Hip";
+            foreach (Transform t in children)
+            {
+                if (t.name == hipName)
+                {
+                    limbObjects.Add(t.gameObject);
+                    break;
+                }
+            }
+        }
+
+        gaitMode = GaitMode.Radial;
+        SetupModel();
     }
 
     /// <summary>

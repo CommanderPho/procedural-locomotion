@@ -28,6 +28,11 @@ public class LocomotionSystemEditor : Editor
             locomotionSystem.SetupModel();
         }
 
+        if (GUILayout.Button(new GUIContent("Setup Radial 5-Leg", "Auto-detects Body and Leg_0..4_Hip bones, sets Radial gait mode, and runs SetupModel.")))
+        {
+            locomotionSystem.AutoSetupRadialModel();
+        }
+
         if (GUILayout.Button(new GUIContent("Reset Model", "Resets the model and removes the modules added by the Procedural Locomotion system.")))
         {
             locomotionSystem.ResetModel();

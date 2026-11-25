@@ -111,19 +111,21 @@ public class ConstraintController : MonoBehaviour
             bool isAheadMoving = aheadCC != null && aheadCC.IsMoving;
             bool isBehindMoving = behindCC != null && behindCC.IsMoving;
 
-            // Check if the step is legal
-            bool isStable = !isOppositeMoving && !isAheadMoving && !isBehindMoving;
-            bool canMove = distanceToTarget > stepSize || (distanceFromBody > maxRange && distanceToTarget > stepSize);
+            bool isSprintEnabled = Character.MovementController != null && Character.MovementController.enableSprint;
+            bool isSprinting = isSprintEnabled && Input.GetKey(Settings.Sprint_Key);
 
-            bool isSprintEnabled = Character.MovementController.enableSprint;
+            // Check if the step is legal
+            bool isStable = Character.gaitMode == LocomotionSystem.GaitMode.Radial
+                ? Character.CanRadialLimbMove(id, isSprinting)
+                : !isOppositeMoving && !isAheadMoving && !isBehindMoving;
+            bool canMove = distanceToTarget > stepSize || (distanceFromBody > maxRange && distanceToTarget > stepSize);
 
             // If all checks are successful, move the limb
             if (canMove && isTraversable && isStable)
             {
                 float stepSpeed = speed;
 
-                bool isSprinting = Input.GetKey(Settings.Sprint_Key);
-                if (isSprintEnabled && isSprinting)
+                if (isSprinting)
                 {
                     stepSpeed *= Character.MovementController.sprintMultiplier;
                     stepSpeed = Mathf.Pow(stepSpeed, 1 / 1.4f);
