@@ -672,6 +672,7 @@ public class LocomotionSystem : MonoBehaviour
         };
 
         // Empty the limbs list. It will be refilled with the limbObjects below.
+        if (limbs == null) limbs = new List<ConstraintController>();
         limbs.Clear();
 
         for (int i = 0; i < limbObjects.Count; i++)
