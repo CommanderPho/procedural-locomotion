@@ -20,7 +20,7 @@ public class LocomotionSystem : MonoBehaviour
     public Settings.Axes limbUpwardsAxis = Settings.Axes.Y;
 
     [SerializeField, Min(0.1f), Tooltip("Distance after which to take a step.")]
-    private float stepSize = 1f;
+    private float stepSize = 0.35f;
 
     [Space]
     [SerializeField, Tooltip("Enable to override the maximum step range.")]
@@ -41,7 +41,7 @@ public class LocomotionSystem : MonoBehaviour
     public GaitMode gaitMode = GaitMode.Bilateral;
 
     [SerializeField, Min(1), Tooltip("Maximum simultaneous swinging limbs when walking in Radial mode.")]
-    private int maxMovingLimbsWalk = 1;
+    private int maxMovingLimbsWalk = 2;
 
     [SerializeField, Min(1), Tooltip("Maximum simultaneous swinging limbs when sprinting in Radial mode.")]
     private int maxMovingLimbsSprint = 2;

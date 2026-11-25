@@ -42,10 +42,10 @@ public class ConstraintController : MonoBehaviour
     private float stepSize;
 
     [SerializeField, Min(0.1f), Tooltip("Maximum height reached by the limb during its limb's arching animation.")]
-    private float stepHeight = 0.5f;
+    private float stepHeight = 0.2f;
 
     [SerializeField, Range(0.1f, 50f), Tooltip("Movement Speed.")]
-    private float speed = 4f;
+    private float speed = 10f;
     private float chainWeight;
 
     public bool IsMoving { get; private set; }

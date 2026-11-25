@@ -14,7 +14,7 @@ public class MovementController : MonoBehaviour
 
     // Pair of degrees between which to limit directional movement.
     // i.e. (0, 90) only allows movement in a direction if its forward vector
-    // points towards a 90° to 360° range around the center.
+    // points towards a 90Â° to 360Â° range around the center.
     private List<(float from, float to)> ArcLimits = new List<(float from, float to)>();
 
     [SerializeField, Tooltip("Allows the character to only move in a direction where limb targets are permitted.")] 
@@ -46,8 +46,9 @@ public class MovementController : MonoBehaviour
         // Minimize the skin width value
         Controller.skinWidth = 0.0001f;
 
-        // Set the pill height to 1 to not interfere with ground bobbing
-        Controller.height = 1;
+        // Keep the capsule compact around the body so it doesn't penetrate the ground plane and fight UpdateGait()
+        Controller.radius = 0.15f;
+        Controller.height = 0.3f;
     }
 
     void Update()
@@ -86,11 +87,13 @@ public class MovementController : MonoBehaviour
 
     private void UpdateCenter()
     {
-        // Use the CoM as the geometrical center
+        // Use the CoM as the geometrical center (clamped in Y so the capsule stays above the ground)
         if (LocomotionSystem)
         {
             // Transform the CoM to Local Coordinates
-            Controller.center = transform.InverseTransformPoint(LocomotionSystem.CenterOfMass + centerShift);
+            Vector3 localCom = transform.InverseTransformPoint(LocomotionSystem.CenterOfMass + centerShift);
+            localCom.y = Mathf.Max(0f, localCom.y);
+            Controller.center = localCom;
         }
     }
 
