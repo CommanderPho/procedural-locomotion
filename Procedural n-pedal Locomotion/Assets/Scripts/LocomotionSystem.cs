@@ -67,6 +67,7 @@ public class LocomotionSystem : MonoBehaviour
     public List<GameObject> limbObjects;
 
     private int groundMask;
+    private float bodyGroundClearance;
     public float BodyWeight { get; private set; }
     public float TotalWeight { get; private set; }
     public bool IsUpdatingGait { get; private set; }
@@ -101,6 +102,17 @@ public class LocomotionSystem : MonoBehaviour
         }
 
         RandomizeStartingPattern();
+
+        // Preserve initial clearance between root/body and foot tips (needed when root is at body center rather than ground)
+        if (limbs.Count > 0)
+        {
+            float avgTipY = 0f;
+            for (int i = 0; i < limbs.Count; i++)
+            {
+                avgTipY += limbs[i].tip.position.y;
+            }
+            bodyGroundClearance = Mathf.Max(0f, transform.position.y - (avgTipY / limbs.Count));
+        }
 
         GenerateBoneColliders();
     }
@@ -195,10 +207,11 @@ public class LocomotionSystem : MonoBehaviour
 
 
             // If there is a difference in height AND its not already rotating
-            if (transform.position.y != groundHit.point.y && isRotEnough)
+            float targetY = groundHit.point.y + bodyGroundClearance;
+            if (!Mathf.Approximately(transform.position.y, targetY) && isRotEnough)
             {
                 // Update the height
-                Vector3 targetPos = new Vector3(transform.position.x, groundHit.point.y, transform.position.z);
+                Vector3 targetPos = new Vector3(transform.position.x, targetY, transform.position.z);
 
                 // Only update it if there is enough of a difference
                 bool isPosEnough = Mathf.Abs((transform.position - targetPos).magnitude) <= 0.05f;
